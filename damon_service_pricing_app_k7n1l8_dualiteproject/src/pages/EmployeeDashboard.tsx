@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { backend } from '../lib/backend';
+import { supabaseBackend } from '../lib/supabaseBackend';
 import { Category, SafeDeviceDTO, RequestStatusDTO, Project } from '../lib/types';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -50,11 +50,11 @@ export const EmployeeDashboard = () => {
 
   const loadInitialData = async () => {
     if (!user) return;
-    const cats = await backend.getCategoriesSafe();
-    const userProjects = await backend.getUserProjects(user.id);
+    const cats = await supabaseBackend.getCategoriesSafe();
+    const userProjects = await supabaseBackend.getUserProjects(user.id);
     setCategories(cats);
     setProjects(userProjects);
-    
+
     if (userProjects.length > 0) {
       setActiveProject(userProjects[0]);
     }
@@ -62,7 +62,7 @@ export const EmployeeDashboard = () => {
 
   const checkUnread = async () => {
     if (!activeProject) return;
-    const comments = await backend.getProjectComments(activeProject.id);
+    const comments = await supabaseBackend.getProjectComments(activeProject.id);
     // Count unread messages from admin
     const count = comments.filter(c => c.role === 'admin' && !c.isRead).length;
     setUnreadCount(count);
@@ -71,8 +71,8 @@ export const EmployeeDashboard = () => {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newProjectName.trim()) return;
-    
-    const newProj = await backend.createProject(user.id, newProjectName);
+
+    const newProj = await supabaseBackend.createProject(user.id, newProjectName);
     setProjects(prev => [newProj, ...prev]);
     setActiveProject(newProj);
     setNewProjectName('');
@@ -81,9 +81,9 @@ export const EmployeeDashboard = () => {
 
   const refreshRequests = async () => {
     if (!user || !activeProject) return;
-    const userRequests = await backend.getUserRequests(user.id);
+    const userRequests = await supabaseBackend.getUserRequests(user.id);
     const projectRequests = userRequests.filter(r => r.projectId === activeProject.id);
-    
+
     const reqMap: Record<string, RequestStatusDTO> = {};
     projectRequests.forEach(r => {
       if (!reqMap[r.deviceId] || reqMap[r.deviceId].timestamp < r.timestamp) {
@@ -95,7 +95,7 @@ export const EmployeeDashboard = () => {
 
   const handleSearch = async () => {
     if (!activeProject) return;
-    const results = await backend.searchDevicesSafe(searchQuery, selectedCategory);
+    const results = await supabaseBackend.searchDevicesSafe(searchQuery, selectedCategory);
     setDevices(results);
   };
 
@@ -103,7 +103,7 @@ export const EmployeeDashboard = () => {
     if (!user || !activeProject) return;
     setRequestingId(deviceId);
     try {
-      await backend.requestPrice(user.id, deviceId, activeProject.id);
+      await supabaseBackend.requestPrice(user.id, deviceId, activeProject.id);
       await refreshRequests();
     } catch (err) {
       console.error(err);

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../lib/types';
-import { backend } from '../lib/backend';
+import { supabaseBackend } from '../lib/supabaseBackend';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -16,27 +17,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check session storage on load
-    const storedUser = sessionStorage.getItem('damon_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        const role = session.user.app_metadata?.role || 'employee';
+        const fullName = session.user.user_metadata?.full_name || 'Unknown User';
+        const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'user';
+
+        setUser({
+          id: session.user.id,
+          username,
+          fullName,
+          role,
+          isActive: true,
+        });
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const role = session.user.app_metadata?.role || 'employee';
+        const fullName = session.user.user_metadata?.full_name || 'Unknown User';
+        const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'user';
+
+        setUser({
+          id: session.user.id,
+          username,
+          fullName,
+          role,
+          isActive: true,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const login = async (username: string, password?: string) => {
-    const foundUser = await backend.login(username, password);
+    const foundUser = await supabaseBackend.login(username, password);
     if (foundUser) {
       setUser(foundUser);
-      sessionStorage.setItem('damon_user', JSON.stringify(foundUser));
       return true;
     }
     return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabaseBackend.logout();
     setUser(null);
-    sessionStorage.removeItem('damon_user');
   };
 
   return (

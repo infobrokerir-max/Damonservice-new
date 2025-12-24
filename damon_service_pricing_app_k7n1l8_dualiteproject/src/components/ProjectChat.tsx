@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { backend } from '../lib/backend';
+import { supabaseBackend } from '../lib/supabaseBackend';
 import { Comment, User } from '../lib/types';
 import { Button } from './ui/Button';
 import { Send, User as UserIcon, ShieldCheck } from 'lucide-react';
@@ -18,8 +18,8 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projectId, currentUser
   useEffect(() => {
     loadComments();
     // Mark as read when opening
-    backend.markCommentsAsRead(projectId, currentUser.role);
-    
+    supabaseBackend.markCommentsAsRead(projectId, currentUser.role);
+
     const interval = setInterval(() => {
       loadComments();
     }, 3000); // Poll every 3s
@@ -32,7 +32,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projectId, currentUser
   }, [comments]);
 
   const loadComments = async () => {
-    const data = await backend.getProjectComments(projectId);
+    const data = await supabaseBackend.getProjectComments(projectId);
     setComments(data);
   };
 
@@ -44,7 +44,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projectId, currentUser
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    await backend.addComment(projectId, currentUser.id, newMessage);
+    await supabaseBackend.addComment(projectId, currentUser.id, currentUser.fullName, newMessage, currentUser.role);
     setNewMessage('');
     loadComments();
   };

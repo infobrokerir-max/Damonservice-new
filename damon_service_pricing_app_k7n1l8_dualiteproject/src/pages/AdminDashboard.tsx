@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { backend } from '../lib/backend';
+import { supabaseBackend } from '../lib/supabaseBackend';
 import { Category, Device, GlobalSettings, InquiryLog, User, ProjectSummaryDTO, PriceBreakdown } from '../lib/types';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -17,41 +17,16 @@ const SettingsTab = ({ settings, onSave }: { settings: GlobalSettings, onSave: (
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBackup = () => {
-    const json = backend.exportDatabase();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `damon_backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleBackup = async () => {
+    alert('بکاپ و بازیابی در نسخه Supabase از طریق API های Supabase مدیریت می‌شود. لطفاً به داشبورد Supabase مراجعه کنید.');
   };
 
   const handleRestoreClick = () => {
-    fileInputRef.current?.click();
+    alert('بکاپ و بازیابی در نسخه Supabase از طریق API های Supabase مدیریت می‌شود. لطفاً به داشبورد Supabase مراجعه کنید.');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (confirm('آیا مطمئن هستید؟ تمام اطلاعات فعلی جایگزین خواهد شد.')) {
-        const success = backend.importDatabase(content);
-        if (success) {
-          alert('اطلاعات با موفقیت بازیابی شد. صفحه رفرش می‌شود.');
-          window.location.reload();
-        } else {
-          alert('فایل نامعتبر است.');
-        }
-      }
-    };
-    reader.readAsText(file);
-    // Reset input
+    // Not used in Supabase version
     e.target.value = '';
   };
 
@@ -192,7 +167,7 @@ const BreakdownModal = ({ device, onClose }: { device: Device, onClose: () => vo
   const [data, setData] = useState<PriceBreakdown | null>(null);
 
   useEffect(() => {
-    backend.getDeviceBreakdown(device.id).then(setData);
+    supabaseBackend.getDeviceBreakdown(device.id).then(setData);
   }, [device.id]);
 
   if (!data) return null;
@@ -630,53 +605,47 @@ export const AdminDashboard = () => {
   }, []);
 
   const loadData = async () => {
-    const d = await backend.getAdminData();
-    const p = await backend.getAdminProjectSummaries();
+    const d = await supabaseBackend.getAdminData();
+    const p = await supabaseBackend.getAdminProjectSummaries();
     setData({ ...d, projectSummaries: p });
   };
 
   const handleSaveSettings = async (newSettings: GlobalSettings) => {
-    await backend.updateSettings(newSettings);
+    await supabaseBackend.updateSettings(newSettings);
     loadData();
     alert('تنظیمات ذخیره شد');
   };
 
   const handleSaveDevice = async (device: Device) => {
-    await backend.updateDevice(device);
+    await supabaseBackend.updateDevice(device);
     loadData();
   };
 
   const handleDeleteDevice = async (id: string) => {
-    await backend.deleteDevice(id);
+    await supabaseBackend.deleteDevice(id);
     loadData();
   };
 
   const handleSaveCategory = async (category: Category) => {
-    await backend.saveCategory(category);
+    await supabaseBackend.saveCategory(category);
     loadData();
   };
 
   const handleDeleteCategory = async (id: string) => {
-    await backend.deleteCategory(id);
+    await supabaseBackend.deleteCategory(id);
     loadData();
   };
 
   const handleSaveUser = async (u: User) => {
-    await backend.saveUser(u);
-    loadData();
+    alert('مدیریت کاربران از طریق پنل احراز هویت Supabase انجام می‌شود.');
   };
 
   const handleDeleteUser = async (id: string) => {
-    try {
-      await backend.deleteUser(id);
-      loadData();
-    } catch (e: any) {
-      alert(e.message);
-    }
+    alert('مدیریت کاربران از طریق پنل احراز هویت Supabase انجام می‌شود.');
   };
 
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
-    await backend.setRequestStatus(id, status);
+    await supabaseBackend.setRequestStatus(id, status);
     loadData();
   };
 
